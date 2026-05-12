@@ -2,7 +2,7 @@
 // Define as rotas do cardápio e aplica middlewares
 
 import { Router } from 'express';
-import * as menuController from './menu.controller.js';
+import * as menuController from '../controllers/menu.controller.js';
 import { authenticate } from '../middleware/auth.js'; // middleware JWT existente
 
 const router = Router();
