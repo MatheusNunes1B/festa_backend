@@ -1,7 +1,7 @@
 // menu.controller.js — Backend (Node.js / Vercel)
 // Controller: valida input, chama service, formata resposta
 
-import * as menuService from './menu.service.js';
+import * as menuService from '../services/menu.service.js';
 
 /* ── Helpers ── */
 const ok  = (res, data, status = 200) => res.status(status).json({ success: true,  ...data });
