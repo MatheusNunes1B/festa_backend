@@ -1,0 +1,17 @@
+{
+  "name": "arraia-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "app.js",
+
+  "scripts": {
+    "start": "node app.js"
+  },
+
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0"
+  }
+}
