@@ -1,7 +1,4 @@
 // routes/menu.routes.js
-// CAMINHOS CORRIGIDOS:
-//   ../controllers/menu.controller.js  (era ./menu.controller.js — ERRADO)
-//   ../middleware/auth.js              (arquivo criado em /middleware/)
 
 import { Router } from 'express';
 import * as menuController from '../controllers/menu.controller.js';
@@ -30,15 +27,12 @@ router.get('/:id', menuController.getById);
 ══════════════════════════════════════ */
 
 // POST /api/menu
-// Cria novo item no cardápio
 router.post('/', authenticate, menuController.create);
 
 // PUT /api/menu/:id
-// Atualiza item existente (parcial ou completo)
 router.put('/:id', authenticate, menuController.update);
 
 // DELETE /api/menu/:id
-// Remove item do cardápio
 router.delete('/:id', authenticate, menuController.remove);
 
 export default router;
