@@ -1,34 +1,26 @@
 // services/menu.service.js — Acesso ao Supabase
-// Toda comunicação com o banco de dados passa por aqui.
 
 import { createClient } from '@supabase/supabase-js';
 
 const TABLE = 'menu_items';
 
-/* ── Cliente Supabase (lazy) ──────────────────────────────────────────────
-   O cliente é criado na primeira chamada, não no import do módulo.
-   Isso evita que o processo quebre no cold start da Vercel caso as
-   variáveis de ambiente ainda não estejam disponíveis no momento do load.
-──────────────────────────────────────────────────────────────────────── */
 let _supabase = null;
 
 function getClient() {
   if (_supabase) return _supabase;
 
-const url = process.env.SUPABASE_URL?.trim();
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const url = process.env.SUPABASE_URL?.trim();
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
-  if (!url || !url.startsWith('http')) {
+  if (!url || typeof url !== 'string' || !url.startsWith('http')) {
     throw new Error(
-      `SUPABASE_URL inválida ou ausente. Valor recebido: "${url}". ` +
-      'Verifique as variáveis de ambiente no painel da Vercel.'
+      `SUPABASE_URL inválida ou ausente. Valor recebido: "${url}"`
     );
   }
 
-  if (!key) {
+  if (!key || typeof key !== 'string') {
     throw new Error(
-      'SUPABASE_SERVICE_KEY ausente. ' +
-      'Verifique as variáveis de ambiente no painel da Vercel.'
+      'SUPABASE_SERVICE_ROLE_KEY ausente. Verifique as variáveis na Vercel.'
     );
   }
 
@@ -36,18 +28,22 @@ const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   return _supabase;
 }
 
-/* ══════════════════════════════════════
-   READ — Listar itens com filtros
-══════════════════════════════════════ */
-export async function getAllMenuItems({ category, featured, available, search, sort } = {}) {
+/* ===================== READ ===================== */
+
+export async function getAllMenuItems({
+  category,
+  featured,
+  available,
+  search,
+  sort
+} = {}) {
   const supabase = getClient();
+
   let query = supabase.from(TABLE).select('*');
 
-  if (category)  query = query.eq('category', category);
+  if (category) query = query.eq('category', category);
   if (featured === 'true') query = query.eq('featured', true);
 
-  // Por padrão só mostra disponíveis.
-  // Passe available=false para ver todos (ex: painel admin)
   if (available !== 'false') {
     query = query.eq('available', true);
   }
@@ -59,25 +55,35 @@ export async function getAllMenuItems({ category, featured, available, search, s
   }
 
   switch (sort) {
-    case 'price_asc':  query = query.order('price', { ascending: true });  break;
-    case 'price_desc': query = query.order('price', { ascending: false }); break;
-    case 'name_asc':   query = query.order('name',  { ascending: true });  break;
-    case 'featured':   query = query.order('featured', { ascending: false }); break;
+    case 'price_asc':
+      query = query.order('price', { ascending: true });
+      break;
+    case 'price_desc':
+      query = query.order('price', { ascending: false });
+      break;
+    case 'name_asc':
+      query = query.order('name', { ascending: true });
+      break;
+    case 'featured':
+      query = query.order('featured', { ascending: false });
+      break;
     default:
       query = query
-        .order('featured',   { ascending: false })
+        .order('featured', { ascending: false })
         .order('created_at', { ascending: false });
   }
 
   const { data, error } = await query;
-  if (error) throw new Error(`Supabase getAllMenuItems: ${error.message}`);
 
-  return { items: data, total: data.length };
+  if (error) {
+    throw new Error(`Supabase getAllMenuItems: ${error.message}`);
+  }
+
+  return { items: data || [], total: data?.length || 0 };
 }
 
-/* ══════════════════════════════════════
-   READ — Item por ID
-══════════════════════════════════════ */
+/* ===================== READ BY ID ===================== */
+
 export async function getMenuItemById(id) {
   const supabase = getClient();
 
@@ -95,9 +101,8 @@ export async function getMenuItemById(id) {
   return data;
 }
 
-/* ══════════════════════════════════════
-   READ — Categorias com contagem
-══════════════════════════════════════ */
+/* ===================== CATEGORIES ===================== */
+
 export async function getCategories() {
   const supabase = getClient();
 
@@ -106,10 +111,13 @@ export async function getCategories() {
     .select('category')
     .eq('available', true);
 
-  if (error) throw new Error(`Supabase getCategories: ${error.message}`);
+  if (error) {
+    throw new Error(`Supabase getCategories: ${error.message}`);
+  }
 
   const counts = {};
-  data.forEach(({ category }) => {
+
+  (data || []).forEach(({ category }) => {
     counts[category] = (counts[category] || 0) + 1;
   });
 
@@ -118,9 +126,8 @@ export async function getCategories() {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/* ══════════════════════════════════════
-   CREATE — Novo item
-══════════════════════════════════════ */
+/* ===================== CREATE ===================== */
+
 export async function createMenuItem(payload) {
   const supabase = getClient();
 
@@ -130,13 +137,15 @@ export async function createMenuItem(payload) {
     .select()
     .single();
 
-  if (error) throw new Error(`Supabase createMenuItem: ${error.message}`);
+  if (error) {
+    throw new Error(`Supabase createMenuItem: ${error.message}`);
+  }
+
   return data;
 }
 
-/* ══════════════════════════════════════
-   UPDATE — Atualizar item
-══════════════════════════════════════ */
+/* ===================== UPDATE ===================== */
+
 export async function updateMenuItem(id, updates) {
   const supabase = getClient();
 
@@ -155,9 +164,8 @@ export async function updateMenuItem(id, updates) {
   return data;
 }
 
-/* ══════════════════════════════════════
-   DELETE — Remover item
-══════════════════════════════════════ */
+/* ===================== DELETE ===================== */
+
 export async function deleteMenuItem(id) {
   const supabase = getClient();
 
@@ -166,6 +174,9 @@ export async function deleteMenuItem(id) {
     .delete({ count: 'exact' })
     .eq('id', id);
 
-  if (error) throw new Error(`Supabase deleteMenuItem: ${error.message}`);
-  return (count ?? 1) > 0;
+  if (error) {
+    throw new Error(`Supabase deleteMenuItem: ${error.message}`);
+  }
+
+  return (count ?? 0) > 0;
 }
