@@ -1,14 +1,9 @@
 // app.js — Configuração principal do Express
-// IMPORTANTE: sem app.listen() aqui.
-// Em Vercel (serverless), o handler é exportado via api/index.js.
-// app.listen() só é chamado em desenvolvimento local.
+// Sem app.listen() — em serverless (Vercel) o handler é exportado via api/index.js.
 
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import menuRouter from './routes/menu.routes.js';
-
-dotenv.config();
 
 const app = express();
 
@@ -26,7 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/menu', menuRouter);
 
 /* ── Health check ── */
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({
     success: true,
     message: 'API Arraiá Boa Demais funcionando 🚀',
@@ -36,21 +31,16 @@ app.get('/', (req, res) => {
 
 /* ── 404 handler ── */
 app.use((req, res) => {
-  res.status(404).json({ success: false, error: `Rota não encontrada: ${req.method} ${req.path}` });
+  res.status(404).json({
+    success: false,
+    error: `Rota não encontrada: ${req.method} ${req.path}`,
+  });
 });
 
 /* ── Error handler global ── */
-app.use((err, req, res, _next) => {
+app.use((err, _req, res, _next) => {
   console.error('[app] Erro não tratado:', err.message);
   res.status(500).json({ success: false, error: 'Erro interno do servidor' });
 });
-
-/* ── Servidor local (apenas fora da Vercel) ── */
-if (process.env.VERCEL !== '1') {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`✅ Servidor rodando em http://localhost:${PORT}`);
-  });
-}
 
 export default app;
