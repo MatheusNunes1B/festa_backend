@@ -15,8 +15,8 @@ let _supabase = null;
 function getClient() {
   if (_supabase) return _supabase;
 
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const url = process.env.SUPABASE_URL?.trim();
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!url || !url.startsWith('http')) {
     throw new Error(
