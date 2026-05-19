@@ -3,24 +3,46 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-/* ── Cliente Supabase ── */
-// Configure estas variáveis no painel da Vercel:
-//   SUPABASE_URL       → https://SEU_PROJETO.supabase.co
-//   SUPABASE_SERVICE_KEY → chave service_role (Settings → API)
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
-
 const TABLE = 'menu_items';
+
+/* ── Cliente Supabase (lazy) ──────────────────────────────────────────────
+   O cliente é criado na primeira chamada, não no import do módulo.
+   Isso evita que o processo quebre no cold start da Vercel caso as
+   variáveis de ambiente ainda não estejam disponíveis no momento do load.
+──────────────────────────────────────────────────────────────────────── */
+let _supabase = null;
+
+function getClient() {
+  if (_supabase) return _supabase;
+
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+
+  if (!url || !url.startsWith('http')) {
+    throw new Error(
+      `SUPABASE_URL inválida ou ausente. Valor recebido: "${url}". ` +
+      'Verifique as variáveis de ambiente no painel da Vercel.'
+    );
+  }
+
+  if (!key) {
+    throw new Error(
+      'SUPABASE_SERVICE_KEY ausente. ' +
+      'Verifique as variáveis de ambiente no painel da Vercel.'
+    );
+  }
+
+  _supabase = createClient(url, key);
+  return _supabase;
+}
 
 /* ══════════════════════════════════════
    READ — Listar itens com filtros
 ══════════════════════════════════════ */
 export async function getAllMenuItems({ category, featured, available, search, sort } = {}) {
+  const supabase = getClient();
   let query = supabase.from(TABLE).select('*');
 
-  // Filtros
   if (category)  query = query.eq('category', category);
   if (featured === 'true') query = query.eq('featured', true);
 
@@ -30,14 +52,12 @@ export async function getAllMenuItems({ category, featured, available, search, s
     query = query.eq('available', true);
   }
 
-  // Busca por texto nos campos principais
   if (search) {
     query = query.or(
       `name.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`
     );
   }
 
-  // Ordenação
   switch (sort) {
     case 'price_asc':  query = query.order('price', { ascending: true });  break;
     case 'price_desc': query = query.order('price', { ascending: false }); break;
@@ -50,7 +70,6 @@ export async function getAllMenuItems({ category, featured, available, search, s
   }
 
   const { data, error } = await query;
-
   if (error) throw new Error(`Supabase getAllMenuItems: ${error.message}`);
 
   return { items: data, total: data.length };
@@ -60,6 +79,8 @@ export async function getAllMenuItems({ category, featured, available, search, s
    READ — Item por ID
 ══════════════════════════════════════ */
 export async function getMenuItemById(id) {
+  const supabase = getClient();
+
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
@@ -67,7 +88,7 @@ export async function getMenuItemById(id) {
     .single();
 
   if (error) {
-    if (error.code === 'PGRST116') return null; // not found
+    if (error.code === 'PGRST116') return null;
     throw new Error(`Supabase getMenuItemById: ${error.message}`);
   }
 
@@ -78,6 +99,8 @@ export async function getMenuItemById(id) {
    READ — Categorias com contagem
 ══════════════════════════════════════ */
 export async function getCategories() {
+  const supabase = getClient();
+
   const { data, error } = await supabase
     .from(TABLE)
     .select('category')
@@ -99,6 +122,8 @@ export async function getCategories() {
    CREATE — Novo item
 ══════════════════════════════════════ */
 export async function createMenuItem(payload) {
+  const supabase = getClient();
+
   const { data, error } = await supabase
     .from(TABLE)
     .insert([payload])
@@ -106,7 +131,6 @@ export async function createMenuItem(payload) {
     .single();
 
   if (error) throw new Error(`Supabase createMenuItem: ${error.message}`);
-
   return data;
 }
 
@@ -114,6 +138,8 @@ export async function createMenuItem(payload) {
    UPDATE — Atualizar item
 ══════════════════════════════════════ */
 export async function updateMenuItem(id, updates) {
+  const supabase = getClient();
+
   const { data, error } = await supabase
     .from(TABLE)
     .update(updates)
@@ -133,12 +159,13 @@ export async function updateMenuItem(id, updates) {
    DELETE — Remover item
 ══════════════════════════════════════ */
 export async function deleteMenuItem(id) {
+  const supabase = getClient();
+
   const { error, count } = await supabase
     .from(TABLE)
     .delete({ count: 'exact' })
     .eq('id', id);
 
   if (error) throw new Error(`Supabase deleteMenuItem: ${error.message}`);
-
   return (count ?? 1) > 0;
 }
