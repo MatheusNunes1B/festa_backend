@@ -1,11 +1,11 @@
-// menu.controller.js — Backend (Node.js / Vercel)
-// Controller: valida input, chama service, formata resposta
+// controllers/menu.controller.js
+// Valida input, chama service, formata resposta.
 
 import * as menuService from '../services/menu.service.js';
 
 /* ── Helpers ── */
 const ok  = (res, data, status = 200) => res.status(status).json({ success: true,  ...data });
-const err = (res, msg, status = 500) =>  res.status(status).json({ success: false, error: msg });
+const err = (res, msg,  status = 500) => res.status(status).json({ success: false, error: msg });
 
 function validateItem(body, requireAll = true) {
   const errors = [];
@@ -35,7 +35,6 @@ function validateItem(body, requireAll = true) {
 
 /* ══════════════════════════════════════
    GET /api/menu
-   Query: ?category= &featured= &available= &search= &sort=
 ══════════════════════════════════════ */
 export async function getAll(req, res) {
   try {
@@ -57,7 +56,7 @@ export async function getAll(req, res) {
 /* ══════════════════════════════════════
    GET /api/menu/categories
 ══════════════════════════════════════ */
-export async function getCategories(req, res) {
+export async function getCategories(_req, res) {
   try {
     const categories = await menuService.getCategories();
     return ok(res, { categories });
@@ -84,7 +83,6 @@ export async function getById(req, res) {
 
 /* ══════════════════════════════════════
    POST /api/menu
-   Body: { name, description, price, image_url, category, available, featured }
 ══════════════════════════════════════ */
 export async function create(req, res) {
   try {
@@ -111,7 +109,6 @@ export async function create(req, res) {
 
 /* ══════════════════════════════════════
    PUT /api/menu/:id
-   Body: campos parciais ou completos
 ══════════════════════════════════════ */
 export async function update(req, res) {
   try {
