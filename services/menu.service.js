@@ -1,16 +1,27 @@
 // services/menu.service.js — Acesso ao Supabase
 // Toda comunicação com o banco de dados passa por aqui.
 
+import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 
 /* ── Cliente Supabase ── */
 // Configure estas variáveis no painel da Vercel:
 //   SUPABASE_URL       → https://SEU_PROJETO.supabase.co
 //   SUPABASE_SERVICE_KEY → chave service_role (Settings → API)
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+let supabase;
+
+function getSupabase() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    throw new Error('Variáveis SUPABASE_URL e SUPABASE_SERVICE_KEY são obrigatórias');
+  }
+
+  supabase ??= createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  );
+
+  return supabase;
+}
 
 const TABLE = 'menu_items';
 
@@ -18,7 +29,7 @@ const TABLE = 'menu_items';
    READ — Listar itens com filtros
 ══════════════════════════════════════ */
 export async function getAllMenuItems({ category, featured, available, search, sort } = {}) {
-  let query = supabase.from(TABLE).select('*');
+  let query = getSupabase().from(TABLE).select('*');
 
   // Filtros
   if (category)  query = query.eq('category', category);
@@ -60,7 +71,7 @@ export async function getAllMenuItems({ category, featured, available, search, s
    READ — Item por ID
 ══════════════════════════════════════ */
 export async function getMenuItemById(id) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from(TABLE)
     .select('*')
     .eq('id', id)
@@ -78,7 +89,7 @@ export async function getMenuItemById(id) {
    READ — Categorias com contagem
 ══════════════════════════════════════ */
 export async function getCategories() {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from(TABLE)
     .select('category')
     .eq('available', true);
@@ -99,7 +110,7 @@ export async function getCategories() {
    CREATE — Novo item
 ══════════════════════════════════════ */
 export async function createMenuItem(payload) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from(TABLE)
     .insert([payload])
     .select()
@@ -114,7 +125,7 @@ export async function createMenuItem(payload) {
    UPDATE — Atualizar item
 ══════════════════════════════════════ */
 export async function updateMenuItem(id, updates) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from(TABLE)
     .update(updates)
     .eq('id', id)
@@ -133,7 +144,7 @@ export async function updateMenuItem(id, updates) {
    DELETE — Remover item
 ══════════════════════════════════════ */
 export async function deleteMenuItem(id) {
-  const { error, count } = await supabase
+  const { error, count } = await getSupabase()
     .from(TABLE)
     .delete({ count: 'exact' })
     .eq('id', id);
